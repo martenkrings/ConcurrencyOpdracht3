@@ -11,26 +11,81 @@ public class Hiswa {
     }
 
     private Lock lock;
-    private Condition newCustomer, invitation, readyToBuy, finished, readyToView;
+    private Condition newViewer, newKoper, invitation, readyToEnter, finished;
 
-    private int numberOfCustomers;
-    private boolean invited, isFinished, inside, finishedBuying, finishedViewing;
+    private int consecutiveBuyers = 0;
+    private boolean enterReady, isFinished, kijkerToegang, koperToegang = false;
 
-    private boolean noCustomers() {
-        return numberOfCustomers == 0;
+    /**
+     * de methode die de kijker aanroepen om de Hiswa te bezoeken
+     */
+    private void nextViewers() throws InterruptedException {
+        //wacht tot kijkers naar binnen mogen
+        while (!kijkerToegang){
+            newViewer.await();
+        }
+        //meld dat je naar binnen wil
+        enterReady = true;
+        readyToEnter.signal();
+        //wacht tot je gemeld wordt dat je klaar bent
+        while (!isFinished) {
+            finished.await();
+        }
     }
 
-    private Kijker nextViewer() {
-        
+    /**
+     * De methode die de kopers aanroepen om de Hiswa te bezoeken
+     */
+    private void nextBuyer() throws InterruptedException {
+        lock.lock();
+        try {
+            //wacht tot kopers naar binnen mogen
+            while (!koperToegang) {
+                newKoper.await();
+            }
+            //meld dat je naar binnen wil
+            enterReady = true;
+            readyToEnter.signal();
+            //wacht tot je gemeld wordt dat je klaar bent
+            while (!isFinished) {
+                finished.await();
+            }
+        } finally {
+            lock.unlock();
+        }
     }
 
     public void run(){
         this.lock = new ReentrantLock();
-        newCustomer = lock.newCondition();
+        newViewer = lock.newCondition();
+        newKoper = lock.newCondition();
         invitation = lock.newCondition();
-        readyToBuy = lock.newCondition();
+        readyToEnter = lock.newCondition();
         finished = lock.newCondition();
-        readyToView = lock.newCondition();
+
+        //De Hiswa is oneindig
+        while (true){
+            //als er niet 4 opeenvolgende kopers waren laat dan een koper naar binnen
+            if (consecutiveBuyers != 4){
+                koperToegang = true;
+                consecutiveBuyers++;
+                newKoper.signal();
+            } else {
+                kijkerToegang = true;
+                consecutiveBuyers = 0;
+                newViewer.signal();
+            }
+            try {
+                //wacht tot de persoon klaar is om naar binnen te gaan
+                while (!enterReady)
+                readyToEnter.await();
+                //stuur de persoon weg als deze klaar is
+                isFinished = true;
+                finished.signal();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
 
     }
 
