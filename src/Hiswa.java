@@ -47,6 +47,15 @@ public class Hiswa {
             viewerLock.unlock();
         }
     }
+
+    public int getWaitingBuyers(){
+        buyerLock.lock();
+        try {
+            return waitingBuyers;
+        }finally {
+            buyerLock.unlock();
+        }
+    }
 //
 //    public synchronized boolean getViewerAccess() {
 //        return viewerAcces;
@@ -60,7 +69,7 @@ public class Hiswa {
      * Method HiswaEmployee calls to get the next customer
      */
     public void nextCustomer() {
-        if (consecutiveBuyers < 4 && waitingBuyers > 0) {
+        if (consecutiveBuyers < 4 && getWaitingBuyers() > 0) {
             buyerLock.lock();
             try {
                 consecutiveBuyers++;
@@ -82,7 +91,7 @@ public class Hiswa {
                     newViewer.signal();
                 }
 
-                consecutiveBuyers = 0;
+                consecutiveBuyers = 30;
             } finally {
                 viewerLock.unlock();
             }
@@ -98,11 +107,12 @@ public class Hiswa {
             while (viewerAcces == false) {
                 newViewer.await();
             }
-            viewersEntering--;
-            //if more should enter set it true
-            if (viewersEntering == 0) {
-                viewerAcces = false;
-            }
+            viewerAcces = false;
+//            viewersEntering--;
+//            //if more should enter set it true
+//            if (viewersEntering == 0) {
+//                viewerAcces = false;
+//            }
 
             //no longer waiting but goign inside
             waitingViewers--;
@@ -139,12 +149,15 @@ public class Hiswa {
     public void buyerEnterHiswa() {
         buyerLock.lock();
         try {
+            System.out.println("x");
             waitingBuyers++;
+            System.out.println(waitingBuyers);
 
             //wait till I may enter
-            while (!buyerAccess) {
+            while (buyerAccess == false) {
                 newBuyer.await();
             }
+
             buyerAccess = false;
             waitingBuyers--;
         } catch (InterruptedException e) {
@@ -269,14 +282,14 @@ public class Hiswa {
                 //a lock so we wont be spammed with data
                 lock.lock();
                 try {
-                    wait.await(100, TimeUnit.MILLISECONDS);
+                    wait.await(5, TimeUnit.MILLISECONDS);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 } finally {
                     lock.unlock();
                 }
 
-                System.out.println("Er wachten nu " + waitingBuyers + " kopers en er zijn " + consecutiveBuyers + " consecutiveBuyers");
+                System.out.println("Er wachten nu " + getWaitingBuyers() + " kopers en er zijn " + consecutiveBuyers + " consecutiveBuyers");
                 System.out.println("Er zijn nu " + getInsideViewers() + " kijkers binnen en " + waitingViewers + " wachtende kijkers");
                 System.out.println();
             }
