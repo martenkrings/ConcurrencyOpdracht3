@@ -10,10 +10,10 @@ public class Hiswa {
     private static final int MAX_VIEWERS = 100;
 
     private Lock buyerLock, viewerLock, lock;
-    private Condition newViewer, newBuyer, readyToEnter, finished, wait;
+    private Condition newViewer, newBuyer, readyToEnter, empty, wait;
 
     private int consecutiveBuyers, waitingBuyers, waitingViewers, insideViewers, viewersEntering;
-    private boolean enterReady = false, viewerAcces = false, buyerAccess = false;
+    private boolean isEmpty = false, viewerAcces = false, buyerAccess = false;
 
     public Hiswa() {
         this.buyerLock = new ReentrantLock();
@@ -22,7 +22,7 @@ public class Hiswa {
         newViewer = viewerLock.newCondition();
         newBuyer = buyerLock.newCondition();
         readyToEnter = lock.newCondition();
-        finished = lock.newCondition();
+        empty = lock.newCondition();
         wait = lock.newCondition();
 
         //thread for testing purposses
@@ -48,11 +48,11 @@ public class Hiswa {
         }
     }
 
-    public int getWaitingBuyers(){
+    public int getWaitingBuyers() {
         buyerLock.lock();
         try {
             return waitingBuyers;
-        }finally {
+        } finally {
             buyerLock.unlock();
         }
     }
@@ -66,10 +66,14 @@ public class Hiswa {
 //    }
 
     /**
-     * Method HiswaEmployee calls to get the next customer
+     * Method HiswaEmployee calls to get the next customer(s)
      */
     public void nextCustomer() {
         if (consecutiveBuyers < 4 && getWaitingBuyers() > 0) {
+            //if a buyer may enter wait till all viewers have left before letting the buyer know
+            waitTurn();
+
+            //let a buyer know he/she can enter
             buyerLock.lock();
             try {
                 consecutiveBuyers++;
@@ -79,6 +83,11 @@ public class Hiswa {
                 buyerLock.unlock();
             }
         } else if (getInsideViewers() < MAX_VIEWERS && getWaitingViewers() > 0) {
+            //if the last to enter was a buyer than wait till he is done before letting viewers in
+            if (consecutiveBuyers != 0) {
+                waitTurn();
+            }
+
             viewerLock.lock();
             try {
                 //notify till no more viewers fit inside
@@ -91,12 +100,27 @@ public class Hiswa {
                     newViewer.signal();
                 }
 
-                consecutiveBuyers = 30;
+                consecutiveBuyers = 0;
             } finally {
                 viewerLock.unlock();
             }
         } else {
             consecutiveBuyers = 0;
+        }
+    }
+
+    public void waitTurn() {
+        lock.lock();
+        try {
+            while (isEmpty == false) {
+                empty.await();
+            }
+            //reset isEmpty
+            isEmpty = false;
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        } finally {
+            lock.unlock();
         }
     }
 
@@ -136,6 +160,11 @@ public class Hiswa {
             } finally {
                 viewerLock.unlock();
             }
+
+            if (insideViewers == 0) {
+                isEmpty = true;
+                empty.signal();
+            }
         } catch (InterruptedException e) {
             e.printStackTrace();
         } finally {
@@ -149,9 +178,7 @@ public class Hiswa {
     public void buyerEnterHiswa() {
         buyerLock.lock();
         try {
-            System.out.println("x");
             waitingBuyers++;
-            System.out.println(waitingBuyers);
 
             //wait till I may enter
             while (buyerAccess == false) {
@@ -170,6 +197,10 @@ public class Hiswa {
         try {
             //take the time to buy a boat
             wait.await(1, TimeUnit.SECONDS);
+
+            //leaving
+            isEmpty = true;
+            empty.signal();
         } catch (InterruptedException e) {
             e.printStackTrace();
         } finally {
