@@ -15,10 +15,8 @@ public class Buyer extends Thread {
         while (true) {
             try {
                 //meld je op een willekeurig moment bij de HISWA
-                this.sleep(new Random().nextInt(15000));
-//                    System.out.println(this.toString() + " Gaat zich nu melden [KOPER]");
-                hiswa.nextBuyer();
-//                    System.out.println(this.toString() + " Is nu klaar [KOPER]");
+                this.sleep(new Random().nextInt(100));
+                hiswa.buyerEnterHiswa();
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }

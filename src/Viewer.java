@@ -16,11 +16,7 @@ public class Viewer extends Thread{
             try {
                 //meld je op een willekeurig moment bij de HISWA
                 this.sleep(new Random().nextInt(12000));
-//                    System.out.println(this.toString() + " Gaat zig nu melden [VIEWER]");
-                hiswa.incrementWaitingViewers();
-                hiswa.nextViewers(this);
-                hiswa.decrementWaitingViewers();
-//                    System.out.println(this.toString() + " Is nu klaar [VIEWER]");
+                hiswa.viewerEnterHiswa();
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }

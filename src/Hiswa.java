@@ -10,165 +10,132 @@ public class Hiswa {
     private static final int MAX_VIEWERS = 100;
 
     private Lock buyerLock, viewerLock, lock;
-    private Condition newViewer, newKoper, readyToEnter, finished, wait;
+    private Condition newViewer, newBuyer, readyToEnter, finished, wait;
 
     private int consecutiveBuyers, waitingBuyers, waitingViewers, insideViewers, viewersEntering;
-    private boolean enterReady = false, kijkerToegang = false, koperToegang = false;
+    private boolean enterReady = false, viewerAcces = false, buyerAccess = false;
 
-    public Hiswa(){
+    public Hiswa() {
         this.buyerLock = new ReentrantLock();
         this.lock = new ReentrantLock();
         this.viewerLock = new ReentrantLock();
         newViewer = viewerLock.newCondition();
-        newKoper = buyerLock.newCondition();
+        newBuyer = buyerLock.newCondition();
         readyToEnter = lock.newCondition();
         finished = lock.newCondition();
         wait = lock.newCondition();
+
+        //thread for testing purposses
+        Overwatch overwatch = new Overwatch();
+        overwatch.start();
     }
 
-    private void waitForEmpty() {
-        //wacht tot je naar binnen mag
-        lock.lock();
-        try {
-            while (insideViewers != 0) {
-                finished.await();
+    public synchronized boolean getViewerAccess(){
+        return viewerAcces;
+    }
+
+    public synchronized  void setViewerAccess(boolean b){
+        viewerAcces = b;
+    }
+
+    /**
+     * Method HiswaEmployee calls to get the next customer
+     */
+    public void nextCustomer() {
+        if (waitingBuyers < 1 && consecutiveBuyers < 4 && insideViewers < 100) {
+            viewerLock.lock();
+            try {
+                //notify till no more viewers fit inside
+                viewersEntering = waitingViewers;
+                if (viewersEntering > MAX_VIEWERS - insideViewers){
+                    viewersEntering = MAX_VIEWERS - insideViewers;
+                }
+                setViewerAccess(true);
+                for (int x = 0; x < viewersEntering; x++){
+                    newViewer.signal();
+                }
+
+                consecutiveBuyers = 0;
+            } finally {
+                viewerLock.unlock();
             }
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        } finally {
-            lock.unlock();
+        } else if (consecutiveBuyers > 3 && waitingBuyers > 0) {
+            buyerLock.lock();
+            try {
+                consecutiveBuyers++;
+                buyerAccess = true;
+                newBuyer.signal();
+                System.out.println("now letting a buyer enter");
+            } finally {
+                buyerLock.unlock();
+            }
         }
     }
 
-    /**
-     * Methode die de Hiswa aanroept om een koper naar binnen laten
-     */
-    private void getBuyer() {
-        buyerLock.lock();
-        try {
-            koperToegang = true;
-            consecutiveBuyers++;
-            newKoper.signal();
-        } finally {
-            buyerLock.unlock();
-        }
-        enterHiswa();
-    }
-
-    /**
-     * Signal viewers to enter
-     */
-    private void getViewer() {
-//        System.out.println("---------Een viewer mag nu naar binnen---------");
+    public void viewerEnterHiswa() {
         viewerLock.lock();
+        incrementWaitingViewers();
         try {
-            consecutiveBuyers = 0;
-//            newViewer.signalAll();
-            //Let all waitingviewers inside untill the limit has been reached or there are no more waitng viewers
-            while (insideViewers < MAX_VIEWERS && waitingViewers > 0) {
-                newViewer.signal();
-                incrementViewersEntering();
-            }
-        } finally {
-            viewerLock.unlock();
-        }
-        enterHiswa();
-    }
-
-    /**
-     * let a person enter the Hiswa
-     */
-    private void enterHiswa() {
-        lock.lock();
-        try {
-            //wacht tot de persoon klaar is om naar binnen te gaan
-            while (!enterReady) {
-                readyToEnter.await();
-            }
-            enterReady = false;
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        } finally {
-            lock.unlock();
-        }
-    }
-
-    /**
-     * de methode die de kijker aanroepen om de Main te bezoeken
-     */
-    public void nextViewers(Thread thread) throws InterruptedException {
-        viewerLock.lock();
-        try {
-            //wacht tot kijkers naar binnen mogen
-            while (!kijkerToegang) {
+            while (getViewerAccess()) {
                 newViewer.await();
             }
-
             decrementViewersEntering();
-            //if I enter last close the door behind me
+            //if I am the last to enter than close the door
             if (viewersEntering == 0) {
-                kijkerToegang = false;
+                setViewerAccess(false);
             }
 
+            //no longer waiting
+            decrementWaitingViewers();
+            incrementInsideViewer();
+
+        } catch (InterruptedException e) {
+            e.printStackTrace();
         } finally {
             viewerLock.unlock();
         }
 
         lock.lock();
         try {
-            //meld dat je door de poort bent
-            incrementInsideViewer();
-
-            //meld dat je naar binnen wil
-            enterReady = true;
             readyToEnter.signal();
 
-            //neem de tijd om rond te kijken
+            //take the time to look around
             wait.await(1, TimeUnit.SECONDS);
-            System.out.println(insideViewers);
 
-            //meld dat je buiten bent
             decrementInsideViewer();
-
-            //als je de laatste bent die weg gaat meld de wachtende koper
-            if (insideViewers == 0) {
-                finished.signal();
-            }
+        } catch (InterruptedException e) {
+            e.printStackTrace();
         } finally {
             lock.unlock();
         }
     }
 
     /**
-     * De methode die de kopers aanroepen om de Main te bezoeken
+     * method a buyer calls to enter the Hiswa
      */
-    public void nextBuyer() throws InterruptedException {
+    public void buyerEnterHiswa() {
         buyerLock.lock();
         try {
-            //een koper gaat nu wachten
             incrementWaitingBuyer();
 
-            //wacht tot kopers naar binnen mogen
-            while (!koperToegang) {
-                newKoper.await();
+            //wait till i may enter
+            while (buyerAccess) {
+                newBuyer.await();
             }
-            koperToegang = false;
+            buyerAccess = false;
             decrementWaitingBuyer();
-//            System.out.println("Een buyer gaat naar binnen");
+        } catch (InterruptedException e) {
+            e.printStackTrace();
         } finally {
             buyerLock.unlock();
         }
 
         lock.lock();
         try {
-            //meld dat je naar binnen wil
-            enterReady = true;
-            readyToEnter.signal();
-
-            //neem de tijd om rond te kijken
+            //take the time to buy a boat
             wait.await(1, TimeUnit.SECONDS);
-            System.out.println("Een Koper is nu klaar");
-            finished.signal();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
         } finally {
             lock.unlock();
         }
@@ -212,6 +179,9 @@ public class Hiswa {
         waitingViewers--;
     }
 
+    /**
+     * locked method to increment viewersEntering
+     */
     private void incrementViewersEntering() {
         viewerLock.lock();
         try {
@@ -221,6 +191,9 @@ public class Hiswa {
         }
     }
 
+    /**
+     * locked method to decrement viewersEntering
+     */
     private void decrementViewersEntering() {
         viewerLock.lock();
         try {
@@ -251,6 +224,29 @@ public class Hiswa {
             insideViewers--;
         } finally {
             viewerLock.unlock();
+        }
+    }
+
+    /**
+     * A class thats not part of the functional project, print info for testing purposes
+     */
+    private class Overwatch extends Thread {
+        public void run() {
+            while (true) {
+                //a lock so we wont be spammed with data
+                lock.lock();
+                try {
+                    wait.await(250, TimeUnit.MILLISECONDS);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                } finally {
+                    lock.unlock();
+                }
+
+                System.out.println("Er wachten nu " + waitingBuyers + " kopers en er zijn " + consecutiveBuyers + " consecutiveBuyers");
+                System.out.println("Er zijn nu " + insideViewers + " kijkers binnen en " + waitingViewers + " wachtende kijkers");
+                System.out.println();
+            }
         }
     }
 }
