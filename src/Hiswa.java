@@ -131,14 +131,12 @@ public class Hiswa {
             while (viewerAcces == false) {
                 newViewer.await();
             }
-            viewerAcces = false;
-//            viewersEntering--;
-//            //if more should enter set it true
-//            if (viewersEntering == 0) {
-//                viewerAcces = false;
-//            }
+            viewersEntering--;
+            if (viewersEntering == 0) {
+                viewerAcces = false;
+            }
 
-            //no longer waiting but goign inside
+            //no longer waiting but going inside
             waitingViewers--;
             insideViewers++;
 
