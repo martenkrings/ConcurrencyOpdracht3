@@ -13,7 +13,7 @@ public class Hiswa {
     private Condition newViewer, newBuyer, readyToEnter, empty, wait;
 
     private int consecutiveBuyers, waitingBuyers, waitingViewers, insideViewers, viewersEntering;
-    private boolean isEmpty = false, viewerAcces = false, buyerAccess = false;
+    private boolean isEmpty = false, viewerAcces = false, buyerAccess = false, allViewersMayEnter = false;
 
     public Hiswa() {
         this.buyerLock = new ReentrantLock();
@@ -69,7 +69,7 @@ public class Hiswa {
      * Method HiswaEmployee calls to get the next customer(s)
      */
     public void nextCustomer() {
-        if (consecutiveBuyers < 4 && getWaitingBuyers() > 0) {
+        if (consecutiveBuyers < 4 && getWaitingBuyers() > 0 && allViewersMayEnter == false) {
             //if a buyer may enter wait till all viewers have left before letting the buyer know
             waitTurn();
 
@@ -90,15 +90,32 @@ public class Hiswa {
 
             viewerLock.lock();
             try {
-                //notify till no more viewers fit inside
-                viewersEntering = waitingViewers;
-                if (viewersEntering > MAX_VIEWERS - insideViewers) {
-                    viewersEntering = MAX_VIEWERS - insideViewers;
+                if (consecutiveBuyers == 4){
+                    allViewersMayEnter = true;
+                    viewersEntering = waitingViewers;
                 }
+
+                //let a viewer in
                 viewerAcces = true;
-                for (int x = 0; x < viewersEntering; x++) {
-                    newViewer.signal();
-                }
+                newViewer.signal();
+
+                //if consecutiveBuyer equals 4 than all waiting viewers should enter
+//                if (consecutiveBuyers == 4){
+//                    viewersEntering = waitingViewers;
+//                    viewerAcces = true;
+//                    newViewer.signalAll();
+//                } else {
+//                    //notify till no more viewers fit inside
+//                    viewersEntering = waitingViewers;
+//                    if (viewersEntering > MAX_VIEWERS - insideViewers) {
+//                        viewersEntering = MAX_VIEWERS - insideViewers;
+//                    }
+//                    viewerAcces = true;
+//                    for (int x = 0; x < viewersEntering; x++) {
+//                        newViewer.signal();
+//                    }
+//                }
+
 
                 consecutiveBuyers = 0;
             } finally {
@@ -131,9 +148,16 @@ public class Hiswa {
             while (viewerAcces == false) {
                 newViewer.await();
             }
-            viewersEntering--;
+            viewerAcces = false;
+
+            //if allViewersMayEnter than take myself of the countdown
+            if (allViewersMayEnter == true) {
+                viewersEntering--;
+            }
+
+            //if I am the last of the viewers that could enter than let the rest know
             if (viewersEntering == 0) {
-                viewerAcces = false;
+                allViewersMayEnter = false;
             }
 
             //no longer waiting but going inside
@@ -149,7 +173,7 @@ public class Hiswa {
         lock.lock();
         try {
             //take the time to look around
-            wait.await(2, TimeUnit.SECONDS);
+            wait.await(100, TimeUnit.MILLISECONDS);
             //get the lock to savely change insideViewers
             viewerLock.lock();
             try {
@@ -206,102 +230,6 @@ public class Hiswa {
         }
     }
 
-//    /**
-//     * locked method to increment waitingBuyers
-//     */
-//    private void incrementWaitingBuyer() {
-//        buyerLock.lock();
-////        try {
-//            waitingBuyers++;
-////        } finally {
-////            buyerLock.unlock();
-////        }
-//    }
-//
-//    /**
-//     * locked method to decrement waiting buyers
-//     */
-//    private void decrementWaitingBuyer() {
-//        buyerLock.lock();
-////        try {
-//            waitingBuyers--;
-////        } finally {
-////            buyerLock.unlock();
-////        }
-//    }
-//
-//    /**
-//     * locked method to increment waitingViewers
-//     */
-//    private void incrementWaitingViewers() {
-//        viewerLock.lock();
-////        try {
-//            waitingViewers++;
-////        } finally {
-////            viewerLock.unlock();
-////        }
-//    }
-//
-//    /**
-//     * locked method to decrement waitingViewers
-//     */
-//    private void decrementWaitingViewers() {
-//        viewerLock.lock();
-////        try {
-//            waitingViewers--;
-////        } finally {
-////            viewerLock.unlock();
-////        }
-//    }
-//
-//    /**
-//     * locked method to increment viewersEntering
-//     */
-//    private void incrementViewersEntering() {
-//        viewerLock.lock();
-////        try {
-//            viewersEntering++;
-////        } finally {
-////            viewerLock.unlock();
-////        }
-//    }
-//
-//    /**
-//     * locked method to decrement viewersEntering
-//     */
-//    private void decrementViewersEntering() {
-//        viewerLock.lock();
-////        try {
-//            viewersEntering--;
-////        } finally {
-////            viewerLock.unlock();
-////        }
-//    }
-//
-//    /**
-//     * locked method to increment insideViewers
-//     */
-//    private void incrementInsideViewer() {
-//        viewerLock.lock();
-////        try {
-//            insideViewers++;
-////        } finally {
-////            viewerLock.unlock();
-////        }
-//    }
-//
-//    /**
-//     * locked method to decrement insideViewers
-//     */
-//    private void decrementInsideViewer() {
-//        viewerLock.lock();
-////        try {
-//            insideViewers--;
-////        } finally {
-////            viewerLock.unlock();
-////        }
-//    }
-
     /**
      * A class thats not part of the functional project, print info for testing purposes
      */
@@ -319,6 +247,7 @@ public class Hiswa {
                 }
 
                 System.out.println("Er wachten nu " + getWaitingBuyers() + " kopers en er zijn " + consecutiveBuyers + " consecutiveBuyers");
+                System.out.println("AllViewerMayEnter: " + allViewersMayEnter + " viewersEntering: " + viewersEntering);
                 System.out.println("Er zijn nu " + getInsideViewers() + " kijkers binnen en " + waitingViewers + " wachtende kijkers");
                 System.out.println();
             }
