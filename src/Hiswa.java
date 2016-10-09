@@ -90,7 +90,7 @@ public class Hiswa {
 
             viewerLock.lock();
             try {
-                if (consecutiveBuyers == 4){
+                if (consecutiveBuyers == 4) {
                     allViewersMayEnter = true;
                     viewersEntering = waitingViewers;
                 }
@@ -98,24 +98,6 @@ public class Hiswa {
                 //let a viewer in
                 viewerAcces = true;
                 newViewer.signal();
-
-                //if consecutiveBuyer equals 4 than all waiting viewers should enter
-//                if (consecutiveBuyers == 4){
-//                    viewersEntering = waitingViewers;
-//                    viewerAcces = true;
-//                    newViewer.signalAll();
-//                } else {
-//                    //notify till no more viewers fit inside
-//                    viewersEntering = waitingViewers;
-//                    if (viewersEntering > MAX_VIEWERS - insideViewers) {
-//                        viewersEntering = MAX_VIEWERS - insideViewers;
-//                    }
-//                    viewerAcces = true;
-//                    for (int x = 0; x < viewersEntering; x++) {
-//                        newViewer.signal();
-//                    }
-//                }
-
 
                 consecutiveBuyers = 0;
             } finally {

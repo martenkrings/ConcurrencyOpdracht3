@@ -1,7 +1,7 @@
 import java.util.Random;
 
 /**
- * Created by Marten on 10/7/2016.
+ * A thread that tries to enter the Hiswa to look around
  */
 public class Viewer extends Thread{
     private Hiswa hiswa;
@@ -11,10 +11,10 @@ public class Viewer extends Thread{
     }
 
     public void run() {
-        //het leven is oneindig
+        //life is endless
         while (true) {
             try {
-                //meld je op een willekeurig moment bij de HISWA
+                //go to the Hiswa at a random time
                 this.sleep(new Random().nextInt(12000));
                 hiswa.viewerEnterHiswa();
             } catch (InterruptedException e) {

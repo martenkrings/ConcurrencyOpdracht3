@@ -1,7 +1,7 @@
 import java.util.Random;
 
 /**
- * Created by Marten on 10/7/2016.
+ * A thread that tries to enter the Hiswa to buy a boat
  */
 public class Buyer extends Thread {
     private Hiswa hiswa;
@@ -11,10 +11,10 @@ public class Buyer extends Thread {
     }
 
     public void run() {
-        //het leven is oneindig
+        //life never ends
         while (true) {
             try {
-                //meld je op een willekeurig moment bij de HISWA
+                //go to the Hiswa at a random time
                 this.sleep(new Random().nextInt(12000));
                 hiswa.buyerEnterHiswa();
             } catch (InterruptedException e) {

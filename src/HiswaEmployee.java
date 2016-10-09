@@ -1,5 +1,5 @@
 /**
- * Class of an employee that signal when peiple can enter.
+ * Class of an employee that signals when people can enter.
  */
 public class HiswaEmployee extends Thread {
     private Hiswa hiswa;

@@ -1,5 +1,5 @@
 /**
- * Created by Marten on 10/7/2016.
+ * Classe that starts up the simulation
  */
 public class World {
     Hiswa hiswa;
@@ -12,6 +12,7 @@ public class World {
     }
 
     public void run() {
+        //make the hiswa
         hiswa = new Hiswa();
 
         //start up the world
