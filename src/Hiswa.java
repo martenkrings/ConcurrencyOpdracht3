@@ -10,7 +10,7 @@ public class Hiswa {
     private static final int MAX_VIEWERS = 100;
 
     private Lock lock;
-    private Condition newViewer, newBuyer, empty, wait;
+    private Condition newViewer, newBuyer, empty;
 
     private int consecutiveBuyers, waitingBuyers, waitingViewers, insideViewers, viewersEntering;
     private boolean isEmpty = false, viewerAcces = false, buyerAccess = false, allViewersMayEnter = false;
@@ -25,7 +25,6 @@ public class Hiswa {
         newViewer = lock.newCondition();
         newBuyer = lock.newCondition();
         empty = lock.newCondition();
-        wait = lock.newCondition();
 
 //        //thread for testing purposses
 //        Overwatch overwatch = new Overwatch();
@@ -170,6 +169,7 @@ public class Hiswa {
 
             //if I am the last of the viewers that could enter than let the rest know
             if (viewersEntering == 0) {
+                System.out.println("All viewers that were allowed have now been inside (have not left yet)");
                 allViewersMayEnter = false;
             }
 
@@ -204,7 +204,6 @@ public class Hiswa {
             //I'm leaving now
             insideViewers--;
 
-
             //if I am the last to leave than signal empty
             if (insideViewers == 0) {
                 isEmpty = true;
@@ -212,7 +211,7 @@ public class Hiswa {
             }
 
             //if a buyer may enter let him know
-            if (allViewersMayEnter == false || getWaitingBuyers() > 0) {
+            if (allViewersMayEnter == false && getWaitingBuyers() > 0) {
                 if (isEmpty) {
                     buyerAccess = true;
                     newBuyer.signal();
@@ -250,7 +249,8 @@ public class Hiswa {
             //the room is not empty anymore
             isEmpty = false;
 
-            System.out.println(this.toString() + " now inside");
+            System.out.println(this + " now inside");
+            System.out.println("| consecutiveBuyers: " + consecutiveBuyers + " |");
             System.out.println("|" + "InsideViewers: " + getInsideViewers() + "|");
             System.out.println("|" + "allviewersMayEnter: " + allViewersMayEnter + "|");
 
@@ -277,7 +277,7 @@ public class Hiswa {
                 allViewersMayEnter = true;
                 viewersEntering = waitingViewers;
 
-                System.out.println("I am the 4th buyer in a row so allViewersMayEnter" + allViewersMayEnter + " vieers that are entering" + viewersEntering);
+                System.out.println("I am the 4th buyer in a row so allViewersMayEnter" + allViewersMayEnter + " viewers that are entering" + viewersEntering);
 
                 viewerAcces = true;
                 newViewer.signal();
@@ -312,27 +312,27 @@ public class Hiswa {
         }
     }
 
-    /**
-     * A class that is not a part of the functional project, prints info for testing purposes
-     */
-    private class Overwatch extends Thread {
-        public void run() {
-            while (true) {
-                //a lock so we wont be spammed with data
-                lock.lock();
-                try {
-                    wait.await(5, TimeUnit.MILLISECONDS);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                } finally {
-                    lock.unlock();
-                }
-
-                System.out.println("Er wachten nu " + getWaitingBuyers() + " kopers en er zijn " + consecutiveBuyers + " consecutiveBuyers");
-                System.out.println("AllViewerMayEnter: " + allViewersMayEnter + " viewersEntering: " + viewersEntering);
-                System.out.println("Er zijn nu " + getInsideViewers() + " kijkers binnen en " + waitingViewers + " wachtende kijkers");
-                System.out.println();
-            }
-        }
-    }
+//    /**
+//     * A class that is not a part of the functional project, prints info for testing purposes
+//     */
+//    private class Overwatch extends Thread {
+//        public void run() {
+//            while (true) {
+//                //a lock so we wont be spammed with data
+//                lock.lock();
+//                try {
+//                    wait.await(5, TimeUnit.MILLISECONDS);
+//                } catch (InterruptedException e) {
+//                    e.printStackTrace();
+//                } finally {
+//                    lock.unlock();
+//                }
+//
+//                System.out.println("Er wachten nu " + getWaitingBuyers() + " kopers en er zijn " + consecutiveBuyers + " consecutiveBuyers");
+//                System.out.println("AllViewerMayEnter: " + allViewersMayEnter + " viewersEntering: " + viewersEntering);
+//                System.out.println("Er zijn nu " + getInsideViewers() + " kijkers binnen en " + waitingViewers + " wachtende kijkers");
+//                System.out.println();
+//            }
+//        }
+//    }
 }
