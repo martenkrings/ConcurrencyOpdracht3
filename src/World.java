@@ -1,5 +1,5 @@
 /**
- * Classe that starts up the simulation
+ * Class that starts up the simulation
  */
 public class World {
     Hiswa hiswa;
@@ -24,7 +24,7 @@ public class World {
             kopers[j] = new Buyer(hiswa);
             kopers[j].start();
         }
-        HiswaEmployee hiswaEmployee = new HiswaEmployee(hiswa);
-        hiswaEmployee.start();
+//        HiswaEmployee hiswaEmployee = new HiswaEmployee(hiswa);
+//        hiswaEmployee.start();
     }
 }
