@@ -13,22 +13,17 @@ public class Hiswa {
     private Condition newViewer, newBuyer, empty;
 
     private int consecutiveBuyers, waitingBuyers, waitingViewers, insideViewers, viewersEntering;
-    private boolean isEmpty = false, viewerAcces = false, buyerAccess = false, allViewersMayEnter = false;
+    private boolean isEmpty = true, viewerAcces = false, buyerAccess = false, allViewersMayEnter = false;
 
     public Hiswa() {
-        //locks
-//        this.buyerLock = new ReentrantLock();
+        //lock
         this.lock = new ReentrantLock();
-//        this.viewerLock = new ReentrantLock();
 
         //conditions
         newViewer = lock.newCondition();
         newBuyer = lock.newCondition();
         empty = lock.newCondition();
 
-//        //thread for testing purposses
-//        Overwatch overwatch = new Overwatch();
-//        overwatch.start();
     }
 
     /**
@@ -59,8 +54,6 @@ public class Hiswa {
         }
     }
 
-    //todo make it synchro xxxx
-
     /**
      * gets the waitingBuyers, locked by buyerLock
      *
@@ -74,50 +67,6 @@ public class Hiswa {
             lock.unlock();
         }
     }
-
-//    /**
-//     * Method HiswaEmployee calls to get the next customer(s)
-//     */
-//    public void nextCustomer() {
-//        if (consecutiveBuyers < 4 && getWaitingBuyers() > 0 && allViewersMayEnter == false) {
-//            //if a buyer may enter wait till all viewers have left before letting the buyer know
-//            waitTurn();
-//
-//            //let a buyer know he/she can enter
-//            buyerLock.lock();
-//            try {
-//                consecutiveBuyers++;
-//                buyerAccess = true;
-//                newBuyer.signal();
-//            } finally {
-//                buyerLock.unlock();
-//            }
-//        } else if (getInsideViewers() < MAX_VIEWERS && getWaitingViewers() > 0) {
-//            //if the last to enter was a buyer than wait till he is done before letting viewers in
-//            if (consecutiveBuyers != 0) {
-//                waitTurn();
-//            }
-//
-//            viewerLock.lock();
-//            try {
-//                //if there are 4 consecutiveBuyers than let all waiting viewers in
-//                if (consecutiveBuyers == 4) {
-//                    allViewersMayEnter = true;
-//                    viewersEntering = waitingViewers;
-//                }
-//
-//                //let a viewer in
-//                viewerAcces = true;
-//                newViewer.signal();
-//
-//                consecutiveBuyers = 0;
-//            } finally {
-//                viewerLock.unlock();
-//            }
-//        } else {
-//            consecutiveBuyers = 0;
-//        }
-//    }
 
     /**
      * method that waits till the Hiswa room is empty
@@ -136,6 +85,7 @@ public class Hiswa {
             lock.unlock();
         }
     }
+
 
     public void viewerEnterHiswa() {
         lock.lock();
@@ -189,14 +139,8 @@ public class Hiswa {
             lock.unlock();
         }
 
-            //todo wait in a method
-            //take the time to look around
+        //take the time to look around
         waitt();
-//        try {
-//            wait.await(100, TimeUnit.MILLISECONDS);
-//        } catch (InterruptedException e) {
-//            e.printStackTrace();
-//        }
 
         //get the lock to savely adjust data
         lock.lock();
@@ -260,12 +204,8 @@ public class Hiswa {
             //no longer waiting
             waitingBuyers--;
 
-
-
-            //todo do this in a method
             //take the time to buy a boat
             waitt();
-//            wait.await(100, TimeUnit.MILLISECONDS);
 
             //leaving
             isEmpty = true;
@@ -273,14 +213,19 @@ public class Hiswa {
 
             //if i am the 4th buyer in a row than I'll tell all viewers they can enter
             if (consecutiveBuyers == 4){
-                //all viewers that are waiting may now enter
-                allViewersMayEnter = true;
-                viewersEntering = waitingViewers;
+                if (getWaitingViewers() == 0){
+                    System.out.println("I am the 4th buyer in a row but there are no waiting viewers so consecutiveBuyers = 0");
+                    consecutiveBuyers = 0;
+                } else {
+                    //all viewers that are waiting may now enter
+                    allViewersMayEnter = true;
+                    viewersEntering = waitingViewers;
 
-                System.out.println("I am the 4th buyer in a row so allViewersMayEnter" + allViewersMayEnter + " viewers that are entering" + viewersEntering);
+                    System.out.println("I am the 4th buyer in a row so allViewersMayEnter" + allViewersMayEnter + " viewers that are entering" + viewersEntering);
 
-                viewerAcces = true;
-                newViewer.signal();
+                    viewerAcces = true;
+                    newViewer.signal();
+                }
 
                 //else let a new buyer in if there are any waiting
             } else if (getWaitingBuyers() > 0){
@@ -312,27 +257,4 @@ public class Hiswa {
         }
     }
 
-//    /**
-//     * A class that is not a part of the functional project, prints info for testing purposes
-//     */
-//    private class Overwatch extends Thread {
-//        public void run() {
-//            while (true) {
-//                //a lock so we wont be spammed with data
-//                lock.lock();
-//                try {
-//                    wait.await(5, TimeUnit.MILLISECONDS);
-//                } catch (InterruptedException e) {
-//                    e.printStackTrace();
-//                } finally {
-//                    lock.unlock();
-//                }
-//
-//                System.out.println("Er wachten nu " + getWaitingBuyers() + " kopers en er zijn " + consecutiveBuyers + " consecutiveBuyers");
-//                System.out.println("AllViewerMayEnter: " + allViewersMayEnter + " viewersEntering: " + viewersEntering);
-//                System.out.println("Er zijn nu " + getInsideViewers() + " kijkers binnen en " + waitingViewers + " wachtende kijkers");
-//                System.out.println();
-//            }
-//        }
-//    }
 }

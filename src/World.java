@@ -24,7 +24,5 @@ public class World {
             kopers[j] = new Buyer(hiswa);
             kopers[j].start();
         }
-//        HiswaEmployee hiswaEmployee = new HiswaEmployee(hiswa);
-//        hiswaEmployee.start();
     }
 }
